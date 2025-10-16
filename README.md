@@ -44,28 +44,12 @@
 
 ## 🚀 Quick Start
 
-### Option 1: Direct Usage
 1. Open `index.html` in your browser
 2. Upload your resume (PDF, DOCX, or TXT)
 3. Paste the job description
 4. Click "Analyze Resume"
 5. Get comprehensive insights!
 
-### Option 2: Local Server
-```bash
-# Clone the repository
-git clone https://github.com/yourusername/ai-resume-analyzer.git
-cd ai-resume-analyzer
-
-# Serve with Python (if you have it)
-python -m http.server 8000
-
-# Or with Node.js
-npx serve .
-
-# Or with PHP
-php -S localhost:8000
-```
 
 ## 📁 File Structure
 
