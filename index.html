@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Resume Analyzer - Free & Unlimited</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@huggingface/inference@2.6.4/dist/browser/hf-inference.min.js"></script>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <div class="logo-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h1>Resume Analyzer</h1>
+                </div>
+                <div class="header-actions">
+                    <button id="theme-toggle" class="theme-toggle" aria-label="Toggle dark mode">
+                        <i class="fas fa-moon theme-icon"></i>
+                    </button>
+                    <div class="badges">
+                        <span class="badge free">
+                            <i class="fas fa-check"></i>
+                            <span>Free</span>
+                        </span>
+                        <span class="badge unlimited">
+                            <i class="fas fa-infinity"></i>
+                            <span>Unlimited</span>
+                        </span>
+                        <span class="badge no-key">
+                            <i class="fas fa-key"></i>
+                            <span>No API Keys</span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main">
+            <!-- Upload Section -->
+            <section id="upload-section" class="section">
+                <div class="card upload-card">
+                    <div class="card-header">
+                        <i class="fas fa-file-upload"></i>
+                        <h2>Upload Resume</h2>
+                    </div>
+                    <div class="upload-area" id="upload-area">
+                        <div class="upload-content">
+                            <div class="upload-icon">
+                                <i class="fas fa-file-upload"></i>
+                            </div>
+                            <h3>Upload your resume</h3>
+                            <p class="upload-text">Drag and drop or click to browse</p>
+                            <div class="file-types">
+                                <span class="file-type"><i class="fas fa-file-pdf"></i> PDF</span>
+                                <span class="file-type"><i class="fas fa-file-word"></i> DOCX</span>
+                                <span class="file-type"><i class="fas fa-file-alt"></i> TXT</span>
+                            </div>
+                            <input type="file" id="file-input" accept=".pdf,.docx,.txt" hidden>
+                        </div>
+                    </div>
+                    <div id="file-info" class="file-info hidden">
+                        <div class="file-preview">
+                            <div class="file-icon">
+                                <i class="fas fa-file-check"></i>
+                            </div>
+                            <div class="file-details">
+                                <span class="file-name" id="file-name"></span>
+                                <span class="file-size" id="file-size"></span>
+                            </div>
+                            <button class="remove-file" id="remove-file">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card job-description-card">
+                    <div class="card-header">
+                        <i class="fas fa-clipboard-list"></i>
+                        <h2>Job Description</h2>
+                    </div>
+                    <div class="textarea-container">
+                        <textarea 
+                            id="job-description" 
+                            placeholder="Paste the job description here to analyze how well your resume matches..."
+                            rows="8"
+                        ></textarea>
+                        <div class="textarea-footer">
+                            <span class="char-count">0 characters</span>
+                        </div>
+                    </div>
+                </div>
+
+                <button id="analyze-btn" class="analyze-btn" disabled>
+                    <div class="btn-content">
+                        <i class="fas fa-chart-bar"></i>
+                        <span class="btn-text">Analyze Resume</span>
+                    </div>
+                    <div class="btn-loading hidden">
+                        <div class="spinner"></div>
+                        <span>Analyzing...</span>
+                    </div>
+                </button>
+
+                <div id="error-message" class="error-message hidden"></div>
+            </section>
+
+            <!-- Results Section -->
+            <section id="results-section" class="section hidden">
+                <!-- Overall Score -->
+                <div class="card score-card">
+                    <div class="score-header">
+                        <div class="score-title">
+                            <i class="fas fa-chart-pie"></i>
+                            <h2>Overall Assessment</h2>
+                        </div>
+                        <div class="overall-score" id="overall-score">
+                            <div class="score-circle">
+                                <svg class="score-ring" viewBox="0 0 100 100">
+                                    <circle cx="50" cy="50" r="45" class="score-bg"></circle>
+                                    <circle cx="50" cy="50" r="45" class="score-progress" id="score-progress"></circle>
+                                </svg>
+                                <div class="score-content">
+                                    <span class="score-number" id="score-number">0</span>
+                                    <span class="score-label">Score</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="summary" id="summary"></p>
+                </div>
+
+                <!-- Detailed Scores -->
+                <div class="scores-grid">
+                    <div class="score-item">
+                        <div class="score-header">
+                            <i class="fas fa-user-tie"></i>
+                            <h3>Experience</h3>
+                        </div>
+                        <div class="score-bar">
+                            <div class="score-fill" id="exp-score"></div>
+                        </div>
+                        <span class="score-value" id="exp-value">0/100</span>
+                        <p class="score-reason" id="exp-reason"></p>
+                    </div>
+                    <div class="score-item">
+                        <div class="score-header">
+                            <i class="fas fa-cogs"></i>
+                            <h3>Skills</h3>
+                        </div>
+                        <div class="score-bar">
+                            <div class="score-fill" id="skills-score"></div>
+                        </div>
+                        <span class="score-value" id="skills-value">0/100</span>
+                        <p class="score-reason" id="skills-reason"></p>
+                    </div>
+                    <div class="score-item">
+                        <div class="score-header">
+                            <i class="fas fa-university"></i>
+                            <h3>Education</h3>
+                        </div>
+                        <div class="score-bar">
+                            <div class="score-fill" id="edu-score"></div>
+                        </div>
+                        <span class="score-value" id="edu-value">0/100</span>
+                        <p class="score-reason" id="edu-reason"></p>
+                    </div>
+                    <div class="score-item">
+                        <div class="score-header">
+                            <i class="fas fa-medal"></i>
+                            <h3>Achievements</h3>
+                        </div>
+                        <div class="score-bar">
+                            <div class="score-fill" id="ach-score"></div>
+                        </div>
+                        <span class="score-value" id="ach-value">0/100</span>
+                        <p class="score-reason" id="ach-reason"></p>
+                    </div>
+                </div>
+
+                <!-- Strengths & Weaknesses -->
+                <div class="analysis-grid">
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="fas fa-thumbs-up"></i>
+                            <h3>Strengths</h3>
+                        </div>
+                        <ul id="strengths-list" class="analysis-list"></ul>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="fas fa-thumbs-down"></i>
+                            <h3>Weaknesses</h3>
+                        </div>
+                        <ul id="weaknesses-list" class="analysis-list"></ul>
+                    </div>
+                </div>
+
+                <!-- Risk vs Reward -->
+                <div class="analysis-grid">
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="fas fa-exclamation-circle"></i>
+                            <h3>Risk Factors</h3>
+                        </div>
+                        <ul id="risks-list" class="analysis-list"></ul>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="fas fa-gift"></i>
+                            <h3>Reward Factors</h3>
+                        </div>
+                        <ul id="rewards-list" class="analysis-list"></ul>
+                    </div>
+                </div>
+
+                <!-- Recommendations -->
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-clipboard-check"></i>
+                        <h3>Recommendations</h3>
+                    </div>
+                    <ul id="recommendations-list" class="analysis-list"></ul>
+                </div>
+
+                <!-- Skills Match Chart -->
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-chart-bar"></i>
+                        <h3>Skills Analysis</h3>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="skills-chart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Resume Improvement Suggestions -->
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-tools"></i>
+                        <h3>Resume Improvement Suggestions</h3>
+                    </div>
+                    <div id="resume-improvements" class="improvements-list"></div>
+                </div>
+
+                <!-- Skill Gap Analysis -->
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-target"></i>
+                        <h3>Skill Gap Analysis</h3>
+                    </div>
+                    <div id="skill-gaps" class="skill-gaps-list"></div>
+                </div>
+
+                <!-- ATS Compatibility -->
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-check-circle"></i>
+                        <h3>ATS Compatibility Score</h3>
+                    </div>
+                    <div class="ats-score-container">
+                        <div class="ats-score" id="ats-score">
+                            <div class="ats-circle">
+                                <svg class="ats-ring" viewBox="0 0 100 100">
+                                    <circle cx="50" cy="50" r="40" class="ats-bg"></circle>
+                                    <circle cx="50" cy="50" r="40" class="ats-progress" id="ats-progress"></circle>
+                                </svg>
+                                <div class="ats-content">
+                                    <span class="ats-number" id="ats-number">0</span>
+                                    <span class="ats-label">ATS Score</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="ats-recommendations" id="ats-recommendations"></div>
+                    </div>
+                </div>
+
+                <!-- Keyword Optimization -->
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-search"></i>
+                        <h3>Keyword Optimization</h3>
+                    </div>
+                    <div id="keyword-suggestions" class="keyword-suggestions"></div>
+                </div>
+
+                <!-- New Analysis Button -->
+                <div class="new-analysis">
+                    <button id="new-analysis-btn" class="new-analysis-btn">
+                        <i class="fas fa-plus"></i>
+                        <span>Analyze Another Resume</span>
+                    </button>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- SVG Gradients for circular progress -->
+    <svg style="position: absolute; width: 0; height: 0;" aria-hidden="true">
+        <defs>
+            <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" style="stop-color:#6366f1;stop-opacity:1" />
+                <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:1" />
+            </linearGradient>
+            <linearGradient id="atsGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" style="stop-color:#06b6d4;stop-opacity:1" />
+                <stop offset="100%" style="stop-color:#6366f1;stop-opacity:1" />
+            </linearGradient>
+        </defs>
+    </svg>
+
+    <script src="script.js"></script>
+</body>
+</html>
